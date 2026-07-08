@@ -1,213 +1,146 @@
-#include <fstream>
-#include <iomanip>
 #include <iostream>
-#include <limits>
-#include <string>
-#include <vector>
-
+#include <fstream>
 using namespace std;
 
 struct Student {
     int id;
-    string name;
-    int age;
-    string course;
+    char name[50];
+    float marks;
 };
 
-const string kDataFile = "students.txt";
+void addStudent() {
+    Student s;
+    ofstream file("students.dat", ios::binary | ios::app);
 
-vector<Student> loadStudents() {
-    vector<Student> students;
-    ifstream inFile(kDataFile);
+    cout << "Enter ID: ";
+    cin >> s.id;
+    cout << "Enter Name: ";
+    cin >> s.name;
+    cout << "Enter Marks: ";
+    cin >> s.marks;
 
-    if (!inFile.is_open()) {
-        return students;
-    }
+    file.write((char*)&s, sizeof(s));
+    file.close();
 
-    Student student{};
-    while (inFile >> student.id >> quoted(student.name) >> student.age >> quoted(student.course)) {
-        students.push_back(student);
-    }
-
-    return students;
+    cout << "Student Added!\n";
 }
 
-bool saveStudents(const vector<Student>& students) {
-    ofstream outFile(kDataFile, ios::trunc);
-    if (!outFile.is_open()) {
-        return false;
+void displayStudents() {
+    Student s;
+    ifstream file("students.dat", ios::binary);
+
+    while (file.read((char*)&s, sizeof(s))) {
+        cout << "\nID: " << s.id;
+        cout << "\nName: " << s.name;
+        cout << "\nMarks: " << s.marks << endl;
     }
 
-    for (const auto& student : students) {
-        outFile << student.id << ' ' << quoted(student.name) << ' ' << student.age << ' ' << quoted(student.course) << '\n';
-    }
-
-    return true;
+    file.close();
 }
 
-int findStudentIndexById(const vector<Student>& students, int id) {
-    for (int i = 0; i < static_cast<int>(students.size()); ++i) {
-        if (students[i].id == id) {
-            return i;
-        }
-    }
-    return -1;
-}
+void searchStudent() {
+    int id;
+    Student s;
+    bool found = false;
 
-int readInt(const string& prompt) {
-    int value;
-    while (true) {
-        cout << prompt;
-        if (cin >> value) {
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            return value;
-        }
-        cout << "Invalid number. Please try again.\n";
-        cin.clear();
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-    }
-}
+    cout << "Enter ID to search: ";
+    cin >> id;
 
-string readLine(const string& prompt) {
-    cout << prompt;
-    string value;
-    getline(cin, value);
-    return value;
-}
+    ifstream file("students.dat", ios::binary);
 
-void addStudent(vector<Student>& students) {
-    cout << "\n--- Add Student ---\n";
-    int id = readInt("Enter ID: ");
-
-    if (findStudentIndexById(students, id) != -1) {
-        cout << "A student with this ID already exists.\n";
-        return;
-    }
-
-    Student student{};
-    student.id = id;
-    student.name = readLine("Enter name: ");
-    student.age = readInt("Enter age: ");
-    student.course = readLine("Enter course: ");
-
-    students.push_back(student);
-
-    if (saveStudents(students)) {
-        cout << "Student added successfully.\n";
-    } else {
-        cout << "Failed to save data.\n";
-    }
-}
-
-void viewStudents(const vector<Student>& students) {
-    cout << "\n--- Student Records ---\n";
-
-    if (students.empty()) {
-        cout << "No student records found.\n";
-        return;
-    }
-
-    cout << left << setw(8) << "ID" << setw(25) << "Name" << setw(8) << "Age" << "Course\n";
-    cout << string(60, '-') << '\n';
-
-    for (const auto& student : students) {
-        cout << left << setw(8) << student.id << setw(25) << student.name << setw(8) << student.age << student.course << '\n';
-    }
-}
-
-void updateStudent(vector<Student>& students) {
-    cout << "\n--- Update Student ---\n";
-    int id = readInt("Enter ID to update: ");
-
-    int index = findStudentIndexById(students, id);
-    if (index == -1) {
-        cout << "Student not found.\n";
-        return;
-    }
-
-    cout << "Leave field empty to keep current value.\n";
-
-    string newName = readLine("Enter new name (current: " + students[index].name + "): ");
-    string ageInput = readLine("Enter new age (current: " + to_string(students[index].age) + "): ");
-    string newCourse = readLine("Enter new course (current: " + students[index].course + "): ");
-
-    if (!newName.empty()) {
-        students[index].name = newName;
-    }
-
-    if (!ageInput.empty()) {
-        try {
-            students[index].age = stoi(ageInput);
-        } catch (...) {
-            cout << "Invalid age input. Keeping previous age.\n";
+    while (file.read((char*)&s, sizeof(s))) {
+        if (s.id == id) {
+            cout << "\nFound!";
+            cout << "\nName: " << s.name;
+            cout << "\nMarks: " << s.marks << endl;
+            found = true;
+            break;
         }
     }
 
-    if (!newCourse.empty()) {
-        students[index].course = newCourse;
-    }
-
-    if (saveStudents(students)) {
-        cout << "Student updated successfully.\n";
-    } else {
-        cout << "Failed to save data.\n";
-    }
+    if (!found) cout << "Student not found!";
+    file.close();
 }
 
-void deleteStudent(vector<Student>& students) {
-    cout << "\n--- Delete Student ---\n";
-    int id = readInt("Enter ID to delete: ");
+void updateStudent() {
+    int id;
+    Student s;
 
-    int index = findStudentIndexById(students, id);
-    if (index == -1) {
-        cout << "Student not found.\n";
-        return;
+    cout << "Enter ID to update: ";
+    cin >> id;
+
+    fstream file("students.dat", ios::binary | ios::in | ios::out);
+
+    while (file.read((char*)&s, sizeof(s))) {
+        if (s.id == id) {
+            cout << "Enter new name: ";
+            cin >> s.name;
+            cout << "Enter new marks: ";
+            cin >> s.marks;
+
+            int pos = file.tellg() - sizeof(s);
+            file.seekp(pos);
+
+            file.write((char*)&s, sizeof(s));
+            cout << "Updated!\n";
+            break;
+        }
     }
 
-    students.erase(students.begin() + index);
-
-    if (saveStudents(students)) {
-        cout << "Student deleted successfully.\n";
-    } else {
-        cout << "Failed to save data.\n";
-    }
+    file.close();
 }
 
-void showMenu() {
-    cout << "\n===== Student Management System =====\n";
-    cout << "1. Add Student\n";
-    cout << "2. View Students\n";
-    cout << "3. Update Student\n";
-    cout << "4. Delete Student\n";
-    cout << "5. Exit\n";
+void deleteStudent() {
+    int id;
+    Student s;
+
+    cout << "Enter ID to delete: ";
+    cin >> id;
+
+    ifstream file("students.dat", ios::binary);
+    ofstream temp("temp.dat", ios::binary);
+
+    while (file.read((char*)&s, sizeof(s))) {
+        if (s.id != id) {
+            temp.write((char*)&s, sizeof(s));
+        }
+    }
+
+    file.close();
+    temp.close();
+
+    remove("students.dat");
+    rename("temp.dat", "students.dat");
+
+    cout << "Deleted if existed.\n";
 }
 
 int main() {
-    vector<Student> students = loadStudents();
+    int choice;
 
-    while (true) {
-        showMenu();
-        int choice = readInt("Enter your choice: ");
+    do {
+        cout << "\n\n--- Student Management System ---\n";
+        cout << "1. Add Student\n";
+        cout << "2. Display Students\n";
+        cout << "3. Search Student\n";
+        cout << "4. Update Student\n";
+        cout << "5. Delete Student\n";
+        cout << "6. Exit\n";
+
+        cout << "Enter choice: ";
+        cin >> choice;
 
         switch (choice) {
-            case 1:
-                addStudent(students);
-                break;
-            case 2:
-                viewStudents(students);
-                break;
-            case 3:
-                updateStudent(students);
-                break;
-            case 4:
-                deleteStudent(students);
-                break;
-            case 5:
-                cout << "Exiting...\n";
-                return 0;
-            default:
-                cout << "Invalid choice. Please select between 1 and 5.\n";
-                break;
+            case 1: addStudent(); break;
+            case 2: displayStudents(); break;
+            case 3: searchStudent(); break;
+            case 4: updateStudent(); break;
+            case 5: deleteStudent(); break;
+            case 6: cout << "Exiting...\n"; break;
+            default: cout << "Invalid choice!\n";
         }
-    }
+
+    } while (choice != 6);
+
+    return 0;
 }
